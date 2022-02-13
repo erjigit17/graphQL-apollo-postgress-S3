@@ -1,14 +1,13 @@
-const { ApolloServer } = require('apollo-server');
+const {ApolloServer} = require('apollo-server')
 
 const typeDefs = require('./schema')
 const resolvers = require('./resolvers')
-const models = require('../models')
 
 async function startApolloServer(typeDefs, resolvers) {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
-    context: { models }
+    context: req => ({req})
   })
 
   const {url, port} = await server.listen()

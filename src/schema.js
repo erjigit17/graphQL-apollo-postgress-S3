@@ -2,32 +2,65 @@ const {gql} = require('apollo-server');
 
 const typeDefs = gql`
     type Query {
-        user(id: String!): User
-        allPosts: [Post!]!
-        getPostsByWhere(authorId: String!): [Post]
-        post(id: String!): Post
+        getPostById(id: String!): PostFull
+        getPostsWithPagination(page: Int, per_page: Int, orderByPublishedAt: Boolean): PostsAndCount
     }
     
     type User {
         id: String!
         nickname: String!
+        email: String
+        photoUrl: String
+    }
+    
+    input UserCreateInput {
+        nickname: String!
         email: String!
         password: String!
-        photo_url: String
-        posts: [Post]
+    }
+    
+    input UserLoginInput {
+        email: String!
+        password: String!
     }
 
-    type Post {
-        id: String!
-        title: String!
-        body: String!
+    type AuthPayLoad {
+        token: String!
+    }
+
+    type PostFull {
+        id: Int
+        title: String
+        body: String
         published_at: String
         author: User
     }
     
+    type PostResponse {
+        id: Int
+        title: String
+        body: String
+        published_at: String
+        authorsNickname: String
+    }
+
+    type Post {
+        id: Int
+        title: String
+        body: String
+        published_at: String
+        authorsNickname: String
+    }
+    
+    type PostsAndCount {
+        posts: [Post]
+        postsCount: Int
+    }
+    
     type Mutation {
-        createUser(nickname: String!, email: String!, password: String!): User!
-        createPost(authorId: String!, title: String!, body: String!): Post!
+        signupUser(data: UserCreateInput!) : AuthPayLoad!
+        loginUser(data: UserLoginInput!): AuthPayLoad!
+        createPost(title: String!, body: String!, published_at: String): PostResponse
     }
 `;
 

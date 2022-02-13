@@ -6,8 +6,8 @@ module.exports = (sequelize) => {
 
     static associate(models) {
       const {User, Post, Comment} = models
-      User.hasMany(Post, {as: 'posts', foreignKey: 'author_id', onDelete: 'CASCADE'})
-      User.hasMany(Comment, {as: 'comments', foreignKey: 'author_id', onDelete: 'CASCADE'})
+      User.hasMany(Post, {as: 'posts', foreignKey: 'authorId', onDelete: 'CASCADE'})
+      User.hasMany(Comment, {as: 'comments', foreignKey: 'authorId', onDelete: 'CASCADE'})
     }
   }
 
@@ -30,7 +30,7 @@ module.exports = (sequelize) => {
       }
     },
     password: {type: Sequelize.STRING, allowNull: false,},
-    photo_url: Sequelize.STRING,
+    photoUrl: Sequelize.STRING,
 
     createdAt: {allowNull: false, type: Sequelize.DATE},
     updatedAt: {allowNull: false, type: Sequelize.DATE}

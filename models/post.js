@@ -6,21 +6,20 @@ module.exports = (sequelize) => {
 
     static associate(models) {
       const {User, Post} = models
-      Post.belongsTo(User, {as: 'author', foreignKey: 'author_id', foreignKeyConstraint: true})
+      Post.belongsTo(User, {as: 'author', foreignKey: 'authorId', foreignKeyConstraint: true})
     }
   }
 
   Post.init({
     id: {
-      type: Sequelize.UUID,
-      defaultValue: Sequelize.UUIDV4,
       allowNull: false,
-      primaryKey: true
+      autoIncrement: true,
+      primaryKey: true,
+      type: Sequelize.INTEGER
     },
-
     title: Sequelize.STRING,
     body: Sequelize.STRING,
-    authorId: {type: Sequelize.UUID, field: 'author_id'},
+    authorId: Sequelize.UUID,
     published_at: Sequelize.DATE,
 
     createdAt: {allowNull: false, type: Sequelize.DATE},

@@ -11,7 +11,13 @@ const resolvers = {
       decodedToken(req)
       const post = await Post.findOne({
         where: {id}, include: [
-          {model: User, as: 'author', foreignKey: 'authorId'}
+          {model: User, as: 'author', foreignKey: 'authorId'},
+          {
+            model: Comment, as: 'comments', foreignKey: 'postId',
+            include: [
+              {model: User, as: 'author', foreignKey: 'authorId', attributes: ['nickname']},
+            ]
+          }
         ]
       })
       return post
@@ -91,18 +97,31 @@ const resolvers = {
       const {id} = await Post.create({authorId, title, body, published_at: publishedTime})
 
       return {id, title, body, published_at: publishedTime, authorsNickname: user.nickname}
+    },
+
+    createComment: async (_, args, {req}) => {
+      const user = decodedToken(req)
+      const {postId, body} = args
+      const post = await Post.findOne({where: {id: postId}, attributes: ['id']})
+      if (!post) throw new Error('Post not found.')
+      const {id: authorId} = await User.findOne({where: {email: user.email}, attributes: ['id']})
+      const publishedTime = Date.now()
+      const {id} = await Comment.create({postId, body, authorId, published_at: publishedTime})
+
+      return {id, body, published_at: publishedTime, authorsNickname: user.nickname}
     }
   },
-  Post: { // reusing data
-    authorsNickname({author}) {
-      return author.nickname
-    }
+  Post: { // reusing data from parent
+    authorsNickname: ({author}) => author.nickname
   },
-  PostFull: { // reusing data
-    author: ({author}) => {
-      return author
+  PostFull: { // reusing data from parent
+    author: ({author}) => author,
+    comments: ({comments}) => [...comments]
+  },
+  CommentResponse: { // reusing data from parent
+    authorsNickname: ({author}) => author.nickname
     }
-  }
+
 }
 
 module.exports = resolvers

@@ -2,7 +2,7 @@ const {gql} = require('apollo-server');
 
 const typeDefs = gql`
     type Query {
-        getPostById(id: String!): PostFull
+        getPostById(id: Int!): PostFull
         getPostsWithPagination(page: Int, per_page: Int, orderByPublishedAt: Boolean): PostsAndCount
     }
     
@@ -27,13 +27,14 @@ const typeDefs = gql`
     type AuthPayLoad {
         token: String!
     }
-
+    
     type PostFull {
         id: Int
         title: String
         body: String
         published_at: String
-        author: User
+        author: User,
+        comments: [CommentResponse]
     }
     
     type PostResponse {
@@ -56,11 +57,19 @@ const typeDefs = gql`
         posts: [Post]
         postsCount: Int
     }
+
+    type CommentResponse {
+        id: Int
+        body: String
+        published_at: String
+        authorsNickname: String
+    }
     
     type Mutation {
         signupUser(data: UserCreateInput!) : AuthPayLoad!
         loginUser(data: UserLoginInput!): AuthPayLoad!
         createPost(title: String!, body: String!, published_at: String): PostResponse
+        createComment(postId: Int!, body: String!): CommentResponse
     }
 `;
 

@@ -6,8 +6,8 @@ module.exports = (sequelize) => {
 
     static associate(models) {
       const {User, Post, Comment} = models
-      User.hasMany(Post, {as: 'posts', foreignKey: 'authorId', onDelete: 'CASCADE'})
-      User.hasMany(Comment, {as: 'comments', foreignKey: 'authorId', onDelete: 'CASCADE'})
+      User.hasMany(Post, {as: 'posts', foreignKey: 'authorId', onDelete: 'NO ACTION'})
+      User.hasMany(Comment, {as: 'comments', foreignKey: 'authorId', onDelete: 'NO ACTION'})
     }
   }
 

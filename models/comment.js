@@ -5,7 +5,8 @@ module.exports = (sequelize) => {
   class Comment extends Model {
 
     static associate(models) {
-      const {User, Comment} = models
+      const {User, Post, Comment} = models
+      Comment.belongsTo(Post, {as: 'post', foreignKey: 'postId', foreignKeyConstraint: true})
       Comment.belongsTo(User, {as: 'author', foreignKey: 'authorId', foreignKeyConstraint: true})
     }
   }
@@ -19,7 +20,8 @@ module.exports = (sequelize) => {
     },
     body: Sequelize.STRING,
     authorId: Sequelize.UUID,
-    published_at: Sequelize.STRING,
+    postId: Sequelize.INTEGER,
+    published_at: Sequelize.DATE,
 
     createdAt: {allowNull: false, type: Sequelize.DATE},
     updatedAt: {allowNull: false, type: Sequelize.DATE}

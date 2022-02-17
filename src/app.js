@@ -2,8 +2,8 @@ const {ApolloServer, gql} = require('apollo-server-fastify')
 const {GraphQLUpload, processRequest} = require('graphql-upload')
 const {finished} = require('stream/promises')
 
-// const typeDefs = require('./schema')
-// const resolvers = require('./resolvers')
+const cropAndCompressImage = require('./../utils/cropAndCompressImage')
+const uploadTo3sBucket = require('./../utils/uploadToS3')
 
 const typeDefs = gql`
     scalar Upload
@@ -29,10 +29,10 @@ const resolvers = {
   Mutation: {
     singleUpload: async (parent, {file}) => {
       const {createReadStream, filename, mimetype, encoding} = await file
-      // See https://nodejs.org/api/stream.html#stream_readable_streams
+
       const stream = createReadStream()
 
-      const out = require('fs').createWriteStream('tmp.jpg')
+      const out = require('fs').createWriteStream('./inputFiles/demo.jpg')
       stream.pipe(out)
       await finished(out)
 
@@ -73,6 +73,9 @@ const start = async () => {
 
     app.register(server.createHandler())
     await app.listen(3000)
+
+    // await cropAndCompressImage()
+    await uploadTo3sBucket()
   } catch (err) {
     app.log.error(err)
     process.exit(1)
@@ -80,11 +83,3 @@ const start = async () => {
 }
 
 start()
-
-//mutation($file: Upload!){
-//   singleUpload(file: $file){
-//     filename
-//     mimetype
-//     encoding
-//   }
-// }

@@ -1,3 +1,6 @@
+const {GraphQLUpload} = require('graphql-upload')
+const {finished} = require('stream/promises')
+
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const graphqlFields = require('graphql-fields')
@@ -6,6 +9,9 @@ const {User, Post, Comment} = require('./../models')
 
 
 const resolvers = {
+
+  Upload: GraphQLUpload,
+
   Query: {
     async getPostById(_, {id}, {req}) {
       decodedToken(req)
@@ -89,6 +95,8 @@ const resolvers = {
     ,
 
     createPost: async (_, args, {req}) => {
+
+      // const user = request
       const user = decodedToken(req)
       const {title, body, published_at} = args
 
@@ -109,6 +117,16 @@ const resolvers = {
       const {id} = await Comment.create({postId, body, authorId, published_at: publishedTime})
 
       return {id, body, published_at: publishedTime, authorsNickname: user.nickname}
+    },
+
+    singleUpload: async (parent, {file}) => {
+      const {createReadStream, filename, mimetype, encoding} = await file
+      const stream = createReadStream()
+      const out = require('fs').createWriteStream('1.png')
+      stream.pipe(out)
+      await finished(out)
+
+      return {filename, mimetype, encoding}
     }
   },
   Post: { // reusing data from parent
@@ -120,8 +138,7 @@ const resolvers = {
   },
   CommentResponse: { // reusing data from parent
     authorsNickname: ({author}) => author.nickname
-    }
-
+  }
 }
 
 module.exports = resolvers

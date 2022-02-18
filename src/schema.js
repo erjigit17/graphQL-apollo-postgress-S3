@@ -1,24 +1,32 @@
-const {gql} = require('apollo-server');
+const {gql} = require('apollo-server-fastify')
 
 const typeDefs = gql`
+    scalar Upload
+
+    type File {
+        filename: String!
+        mimetype: String!
+        encoding: String!
+    }
+
     type Query {
         getPostById(id: Int!): PostFull
         getPostsWithPagination(page: Int, per_page: Int, orderByPublishedAt: Boolean): PostsAndCount
     }
-    
+
     type User {
         id: String!
         nickname: String!
         email: String
         photoUrl: String
     }
-    
+
     input UserCreateInput {
         nickname: String!
         email: String!
         password: String!
     }
-    
+
     input UserLoginInput {
         email: String!
         password: String!
@@ -27,7 +35,7 @@ const typeDefs = gql`
     type AuthPayLoad {
         token: String!
     }
-    
+
     type PostFull {
         id: Int
         title: String
@@ -36,7 +44,7 @@ const typeDefs = gql`
         author: User,
         comments: [CommentResponse]
     }
-    
+
     type PostResponse {
         id: Int
         title: String
@@ -52,7 +60,7 @@ const typeDefs = gql`
         published_at: String
         authorsNickname: String
     }
-    
+
     type PostsAndCount {
         posts: [Post]
         postsCount: Int
@@ -66,11 +74,12 @@ const typeDefs = gql`
     }
     
     type Mutation {
+        singleUpload(file: Upload!): File!
         signupUser(data: UserCreateInput!) : AuthPayLoad!
         loginUser(data: UserLoginInput!): AuthPayLoad!
         createPost(title: String!, body: String!, published_at: String): PostResponse
         createComment(postId: Int!, body: String!): CommentResponse
     }
-`;
+`
 
-module.exports = typeDefs;
+module.exports = typeDefs

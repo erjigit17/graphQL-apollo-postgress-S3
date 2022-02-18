@@ -1,9 +1,16 @@
 const jwt = require('jsonwebtoken')
 const decodedToken = (req, requireAuth = true) => {
-  const header = req.req.headers.authorization
+
+  const symbols = req.request.raw
+  const symbolKey = Object.getOwnPropertySymbols(symbols)
+    .find(key => key.toString() === 'Symbol(kHeaders)')
+
+  if (symbolKey.length === 0) throw new Error('Need headers.')
+
+  const header = symbols[symbolKey] //.toString()
 
   if (header) {
-    const token = header.replace('Bearer ', '')
+    const token = header.authorization.replace('Bearer ', '')
     const decoded = jwt.verify(token, 'supersecret')
     // check exp
     const nowInSecs = Math.floor(Date.now() / 1000)

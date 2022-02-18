@@ -10,7 +10,7 @@ module.exports = {
       },
 
       title: {type: Sequelize.STRING, allowNull: false},
-      body: {type: Sequelize.STRING, allowNull: false},
+      body: {type: Sequelize.STRING(2048), allowNull: false},
       authorId: {type: Sequelize.UUID, allowNull: false, references: {model: 'users', key: 'id'}, onDelete: 'CASCADE'},
       published_at: {type: Sequelize.DATE},
 

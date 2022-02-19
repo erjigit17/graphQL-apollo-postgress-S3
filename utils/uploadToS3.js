@@ -5,6 +5,8 @@ const {renameSync} = require('fs')
 const CronJob = require('cron').CronJob
 const S3 = require('aws-sdk/clients/s3')
 
+const {User} = require('./../models')
+
 const bucketName = process.env.AWS_BUCKET_NAME
 const region = process.env.AWS_BUCKET_REGION
 const accessKeyId = process.env.AWS_ACCESS_KEY
@@ -60,6 +62,10 @@ const uploadFile = (tmpFilePath, file) => {
     s3.upload(params, async (s3Err, data) => {
       if (s3Err) throw s3Err
       console.log(`File uploaded successfully at ${data.Location}`)
+      const userId = file.split('.')[0]
+      console.log(userId)
+      await User.update({photoUrl: data.Location}, {where: {id: userId}})
+
       await removeTmpFile(tmpFilePath)
     })
   })

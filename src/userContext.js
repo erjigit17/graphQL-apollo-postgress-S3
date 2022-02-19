@@ -1,4 +1,7 @@
 const jwt = require('jsonwebtoken')
+require('dotenv').config()
+const jwtsecretkey = process.env.JWT_SECRET_KEY
+
 const {User} = require('./../models')
 
 const userContext = async (req, requireAuth = true)  => {
@@ -13,7 +16,7 @@ const userContext = async (req, requireAuth = true)  => {
 
   if (header) {
     const token = header.authorization.replace('Bearer ', '')
-    const decoded = jwt.verify(token, 'supersecret')
+    const decoded = jwt.verify(token, jwtsecretkey)
     // check exp
     const nowInSecs = Math.floor(Date.now() / 1000)
     if(decoded.exp < nowInSecs) throw new Error('Token expired, please login again.')

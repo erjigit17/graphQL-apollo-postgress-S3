@@ -1,9 +1,13 @@
 const {GraphQLUpload} = require('graphql-upload')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+require('dotenv').config()
+const jwtsecretkey = process.env.JWT_SECRET_KEY
 const graphqlFields = require('graphql-fields')
 
 const userContext = require('./userContext')
+
+
 const {User, Post, Comment} = require('./../models')
 const cropAndSaveImage = require('./../utils/cropAndSaveImage')
 
@@ -75,7 +79,7 @@ const resolvers = {
       })
       const payload = {email, nickname}
       payload['exp'] = Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 h
-      const token = jwt.sign(payload, 'supersecret')
+      const token = jwt.sign(payload, jwtsecretkey)
       return {token}
     },
 
@@ -88,7 +92,7 @@ const resolvers = {
       if (!isMatch) throw new Error('Password not match.')
       const payload = {email, nickname: theUser.nickname}
       payload['exp'] = Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 h
-      const token = jwt.sign(payload, 'supersecret')
+      const token = jwt.sign(payload, jwtsecretkey)
       return {token}
     }
     ,

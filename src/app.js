@@ -1,6 +1,7 @@
 const {ApolloServer} = require('apollo-server-fastify')
 const {processRequest} = require('graphql-upload')
 
+const uploadToS3 = require('./../utils/uploadToS3')
 const typeDefs = require('./schema')
 const resolvers = require('./resolvers')
 
@@ -32,6 +33,8 @@ const start = async () => {
 
     // Start Apollo Server
     await server.start()
+    //
+    await uploadToS3()
 
     app.register(server.createHandler())
     const PORT = 3000

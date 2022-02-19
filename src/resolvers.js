@@ -1,12 +1,11 @@
 const {GraphQLUpload} = require('graphql-upload')
-const {finished} = require('stream/promises')
-
+const sharp = require('sharp')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+
 const graphqlFields = require('graphql-fields')
 const {decodedToken} = require('./decodedToken')
 const {User, Post, Comment} = require('./../models')
-
 
 const resolvers = {
 
@@ -120,11 +119,31 @@ const resolvers = {
     },
 
     singleUpload: async (parent, {file}) => {
+      const sharpStream = sharp({failOnError: false})
+      const fs = require("fs")
       const {createReadStream, filename, mimetype, encoding} = await file
       const stream = createReadStream()
-      const out = require('fs').createWriteStream('1.png')
-      stream.pipe(out)
-      await finished(out)
+      const promises = []
+
+      const THUMB_MAX_WIDTH = 300
+
+      promises.push(
+        sharpStream
+          .resize(THUMB_MAX_WIDTH)
+          .webp({quality: 70, effort: 6})
+          .toFile('tmp.webp')
+      )
+
+      stream.pipe(sharpStream)
+
+      Promise.all(promises)
+        .then(res => { console.log("Done!", res); })
+        .catch(err => {
+          console.error("Error processing files, let's clean it up", err);
+          try {
+            fs.unlinkSync("tmp.webp");
+          } catch (e) {}
+        })
 
       return {filename, mimetype, encoding}
     }

@@ -1,11 +1,11 @@
 const {GraphQLUpload} = require('graphql-upload')
-const sharp = require('sharp')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-
 const graphqlFields = require('graphql-fields')
-const {decodedToken} = require('./decodedToken')
+
+const userContext = require('./userContext')
 const {User, Post, Comment} = require('./../models')
+const cropAndSaveImage = require('./../utils/cropAndSaveImage')
 
 const resolvers = {
 
@@ -13,7 +13,7 @@ const resolvers = {
 
   Query: {
     async getPostById(_, {id}, {req}) {
-      decodedToken(req)
+      await userContext(req)
       const post = await Post.findOne({
         where: {id}, include: [
           {model: User, as: 'author', foreignKey: 'authorId'},
@@ -29,7 +29,7 @@ const resolvers = {
     },
 
     async getPostsWithPagination(_, args, {req}, info) {
-      decodedToken(req)
+      await userContext(req)
       const fields = graphqlFields(info)
 
       const {page,  per_page, orderByPublishedAt} = args
@@ -95,55 +95,30 @@ const resolvers = {
 
     createPost: async (_, args, {req}) => {
 
-      // const user = request
-      const user = decodedToken(req)
+      const user = await userContext(req)
       const {title, body, published_at} = args
 
-      const {id: authorId} = await User.findOne({where: {email: user.email}, attributes: ['id']})
       const publishedTime = published_at || Date.now()
-      const {id} = await Post.create({authorId, title, body, published_at: publishedTime})
+      const {id} = await Post.create({authorId: user.id, title, body, published_at: publishedTime})
 
       return {id, title, body, published_at: publishedTime, authorsNickname: user.nickname}
     },
 
     createComment: async (_, args, {req}) => {
-      const user = decodedToken(req)
+      const user = await userContext(req)
       const {postId, body} = args
       const post = await Post.findOne({where: {id: postId}, attributes: ['id']})
       if (!post) throw new Error('Post not found.')
-      const {id: authorId} = await User.findOne({where: {email: user.email}, attributes: ['id']})
       const publishedTime = Date.now()
-      const {id} = await Comment.create({postId, body, authorId, published_at: publishedTime})
+      const {id} = await Comment.create({postId, body, authorId: user.id, published_at: publishedTime})
 
       return {id, body, published_at: publishedTime, authorsNickname: user.nickname}
     },
 
-    singleUpload: async (parent, {file}) => {
-      const sharpStream = sharp({failOnError: false})
-      const fs = require("fs")
+    singleUpload: async (parent, {file}, {req}) => {
+      const user = await userContext(req)
       const {createReadStream, filename, mimetype, encoding} = await file
-      const stream = createReadStream()
-      const promises = []
-
-      const THUMB_MAX_WIDTH = 300
-
-      promises.push(
-        sharpStream
-          .resize(THUMB_MAX_WIDTH)
-          .webp({quality: 70, effort: 6})
-          .toFile('tmp.webp')
-      )
-
-      stream.pipe(sharpStream)
-
-      Promise.all(promises)
-        .then(res => { console.log("Done!", res); })
-        .catch(err => {
-          console.error("Error processing files, let's clean it up", err);
-          try {
-            fs.unlinkSync("tmp.webp");
-          } catch (e) {}
-        })
+      await cropAndSaveImage(createReadStream, mimetype, user)
 
       return {filename, mimetype, encoding}
     }

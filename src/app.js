@@ -1,7 +1,6 @@
 const {ApolloServer} = require('apollo-server-fastify')
 const {processRequest} = require('graphql-upload')
 
-
 const typeDefs = require('./schema')
 const resolvers = require('./resolvers')
 

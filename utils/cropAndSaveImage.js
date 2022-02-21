@@ -1,6 +1,6 @@
 const sharp = require('sharp')
 const fs = require('fs')
-const THUMB_MAX_WIDTH = 300
+const IMAGE_SIZE = 300
 const promises = []
 const allowedExtension = ['jpeg', 'jpg', 'png', 'webp', 'gif', 'avif', 'tiff']
 
@@ -9,21 +9,19 @@ async function cropAndSaveImage(createReadStream, mimetype, user){
 
   // ignore invalid fails
   const isValidExtension = checkExtension (mimetype)
-  if(!isValidExtension) return
+  if(!isValidExtension) return // TODO need error
 
   const stream = createReadStream()
 
-  const sharpStream = sharp({
-    failOnError: false
-  })
+  const sharpStream = sharp({failOnError: false})
 
-  const FILE_PATH = `./tmp/${user.id}.webp`
+  const filePath = `./tmp/${user.id}.webp`
 
   promises.push(
     sharpStream
-      .resize(THUMB_MAX_WIDTH)
+      .resize(IMAGE_SIZE, IMAGE_SIZE)
       .webp({quality: 60, effort: 6})
-      .toFile(FILE_PATH)
+      .toFile(filePath)
   )
 
   stream.pipe(sharpStream)
@@ -35,7 +33,7 @@ async function cropAndSaveImage(createReadStream, mimetype, user){
     .catch(err => {
       console.error('Error processing files, let\'s clean it up', err)
       try {
-        fs.unlinkSync(FILE_PATH)
+        fs.unlinkSync(filePath)
       } catch (e) {
       }
     })

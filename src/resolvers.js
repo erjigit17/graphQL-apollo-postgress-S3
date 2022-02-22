@@ -2,14 +2,14 @@ const {GraphQLUpload} = require('graphql-upload')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
-const jwtsecretkey = process.env.JWT_SECRET_KEY
+const jwtSecretKey = process.env.JWT_SECRET_KEY
 const graphqlFields = require('graphql-fields')
 
-const userContext = require('./userContext')
+const { auth, userContext } = require('./plugins/auth')
 
 
 const {User, Post, Comment} = require('./../models')
-const cropAndSaveImage = require('./../utils/cropAndSaveImage')
+const {cropAndUploadToS3, checkExtension} = require('./plugins/cropAndUploadToS3')
 
 const resolvers = {
 
@@ -17,7 +17,7 @@ const resolvers = {
 
   Query: {
     async getPostById(_, {id}, {req}) {
-      await userContext(req)
+      await auth(req)
       const post = await Post.findOne({
         where: {id}, include: [
           {model: User, as: 'author', foreignKey: 'authorId'},
@@ -33,7 +33,7 @@ const resolvers = {
     },
 
     async getPostsWithPagination(_, args, {req}, info) {
-      await userContext(req)
+      await auth(req)
       const fields = graphqlFields(info)
 
       const {page,  per_page, orderByPublishedAt} = args
@@ -62,7 +62,6 @@ const resolvers = {
         posts = await Post.findAndCountAll({...params})
       }
 
-
       return {posts: posts.rows, postsCount: posts.count}
 
     },
@@ -79,7 +78,7 @@ const resolvers = {
       })
       const payload = {email, nickname}
       payload['exp'] = Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 h
-      const token = jwt.sign(payload, jwtsecretkey)
+      const token = jwt.sign(payload, jwtSecretKey)
       return {token}
     },
 
@@ -92,39 +91,64 @@ const resolvers = {
       if (!isMatch) throw new Error('Password not match.')
       const payload = {email, nickname: theUser.nickname}
       payload['exp'] = Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 h
-      const token = jwt.sign(payload, jwtsecretkey)
+      const token = jwt.sign(payload, jwtSecretKey)
       return {token}
     }
     ,
 
     createPost: async (_, args, {req}) => {
 
-      const user = await userContext(req)
-      const {title, body, published_at} = args
+      try {
+        const user = await userContext(req)
+        const {title, body, published_at} = args
+        if(!title || !body) throw new Error(`title and body must be provided`)
+        const publishedTime = published_at || Date.now()
+        const {id} = await Post.create({authorId: user.id, title, body, published_at: publishedTime})
 
-      const publishedTime = published_at || Date.now()
-      const {id} = await Post.create({authorId: user.id, title, body, published_at: publishedTime})
+        return {id, title, body, published_at: publishedTime, authorsNickname: user.nickname}
+      } catch (e) {
+        return {errors: [e]}
+      }
 
-      return {id, title, body, published_at: publishedTime, authorsNickname: user.nickname}
     },
 
     createComment: async (_, args, {req}) => {
-      const user = await userContext(req)
-      const {postId, body} = args
-      const post = await Post.findOne({where: {id: postId}, attributes: ['id']})
-      if (!post) throw new Error('Post not found.')
-      const publishedTime = Date.now()
-      const {id} = await Comment.create({postId, body, authorId: user.id, published_at: publishedTime})
+      try {
+        const user = await userContext(req)
+        const {postId, body} = args
+        const post = await Post.findOne({where: {id: postId}, attributes: ['id']})
+        if (!post) throw new Error('Post not found.')
+        const publishedTime = Date.now()
+        const {id} = await Comment.create({postId, body, authorId: user.id, published_at: publishedTime})
 
-      return {id, body, published_at: publishedTime, authorsNickname: user.nickname}
+        return {id, body, published_at: publishedTime, authorsNickname: user.nickname}
+      } catch (e) {
+        return {errors: [e]}
+      }
     },
 
     singleUpload: async (parent, {file}, {req}) => {
-      const user = await userContext(req)
-      const {createReadStream, filename, mimetype, encoding} = await file
-      await cropAndSaveImage(createReadStream, mimetype, user)
+      try {
+        const user = await userContext(req)
+        const {createReadStream, mimetype} = await file
+        checkExtension(mimetype)
+        const newFileName = `${user.id}.webp`
+        const result = await cropAndUploadToS3(createReadStream, newFileName)
+        if (result.success !== true) throw new Error(result?.message || 'Unknown error')
+        await User.update({photoUrl: result.location}, {where: {id: user.id}})
 
-      return {filename, mimetype, encoding}
+        return {
+          code: 200,
+          success: true,
+          message: result.message
+        }
+      } catch (e) {
+        return {
+          code: 409,
+          success: false,
+          message: e.message
+        }
+      }
     }
   },
   Post: { // reusing data from parent

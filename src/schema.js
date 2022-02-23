@@ -30,6 +30,13 @@ const typeDefs = gql`
         password: String!
     }
 
+    input createPost {
+        title: String,
+        body: String,
+        published_at: Float
+    }
+
+
     input UserLoginInput {
         email: String!
         password: String!
@@ -43,22 +50,22 @@ const typeDefs = gql`
         id: Int
         title: String
         body: String
-        published_at: String
+        published_at: Float
         author: User,
         comments: [CommentResponse]
     }
-    
+
     type Error {
         name: String
         message: String
         stack: String
     }
-    
+
     type PostResponse {
         id: Int
         title: String
         body: String
-        published_at: String
+        published_at: Float
         authorsNickname: String
         errors: [Error]
     }
@@ -67,7 +74,7 @@ const typeDefs = gql`
         id: Int
         title: String
         body: String
-        published_at: String
+        published_at: Float
         authorsNickname: String
     }
 
@@ -79,16 +86,23 @@ const typeDefs = gql`
     type CommentResponse {
         id: Int
         body: String
-        published_at: String
+        published_at: Float
         authorsNickname: String
         errors: [Error]
     }
-    
+
+    type SendEmailReportResponse {
+        success: Boolean!
+        message: String!
+        errors: [Error]
+    }
+
     type Mutation {
         singleUpload(file: Upload!): FileUploadResult!
+        sendEmailReport(startDate: Float!, endDate: Float!, email: String!): SendEmailReportResponse
         signupUser(data: UserCreateInput!) : AuthPayLoad!
         loginUser(data: UserLoginInput!): AuthPayLoad!
-        createPost(title: String, body: String, published_at: String): PostResponse
+        createPost(title: String, body: String, published_at: Float): PostResponse
         createComment(postId: Int!, body: String!): CommentResponse
     }
 `

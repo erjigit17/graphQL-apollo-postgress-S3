@@ -90,3 +90,18 @@ VARIABLES -> Add files
 
 # Обработчика ощибок нет. 
 
+
+
+# Запуск redis on macOs "brew services start redis", проверка redis-cli ping        
+
+
+# Запросс на получение отчета
+```json
+{
+  "startDate": 0,
+  "endDate":  1646632410973,
+  "email": "erjigit17@gmail.com"
+}
+
+```
+

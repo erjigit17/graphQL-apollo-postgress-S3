@@ -1,15 +1,16 @@
+require('dotenv').config()
 const {GraphQLUpload} = require('graphql-upload')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-require('dotenv').config()
-const jwtSecretKey = process.env.JWT_SECRET_KEY
+const {Op} = require('sequelize')
 const graphqlFields = require('graphql-fields')
 
 const { auth, userContext } = require('./plugins/auth')
-
+const jwtSecretKey = process.env.JWT_SECRET_KEY
 
 const {User, Post, Comment} = require('./../models')
 const {cropAndUploadToS3, checkExtension} = require('./plugins/cropAndUploadToS3')
+const {sendEmail} = require('../queues/email.queues')
 
 const resolvers = {
 
@@ -117,7 +118,7 @@ const resolvers = {
         const user = await userContext(req)
         const {postId, body} = args
         const post = await Post.findOne({where: {id: postId}, attributes: ['id']})
-        if (!post) throw new Error('Post not found.')
+        if (post === null) throw new Error('Post not found.')
         const publishedTime = Date.now()
         const {id} = await Comment.create({postId, body, authorId: user.id, published_at: publishedTime})
 
@@ -149,6 +150,29 @@ const resolvers = {
           message: e.message
         }
       }
+    },
+
+    sendEmailReport: async (_, args, {req}) => {
+      try {
+        const user = await userContext(req)
+        const {startDate, endDate, email} = args
+
+        const usersPosts = await User.findAll({attributes: ['nickname', 'email'],
+          include: [{
+            model: Post, as: 'posts', foreignKey: 'authorId', attributes: ['id'],
+            where: {published_at: {[Op.between]: [startDate, endDate]}}
+        }]})
+        const usersComments = await User.findAll({attributes: ['nickname', 'email'],
+          include: [{
+            model: Comment, as: 'comments', foreignKey: 'authorId', attributes: ['id'],
+            where: {published_at: {[Op.between]: [startDate, endDate]}}
+          }]})
+        await sendEmail({email, usersPosts, usersComments})
+
+        return {success: true, message: 'Report generation started'}
+      } catch (e) {
+        return {success: false, errors: [e]}
+      }
     }
   },
   Post: { // reusing data from parent
@@ -157,9 +181,6 @@ const resolvers = {
   PostFull: { // reusing data from parent
     author: ({author}) => author,
     comments: ({comments}) => [...comments]
-  },
-  CommentResponse: { // reusing data from parent
-    authorsNickname: ({author}) => author.nickname
   }
 }
 

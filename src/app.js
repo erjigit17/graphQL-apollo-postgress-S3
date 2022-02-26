@@ -1,3 +1,4 @@
+require('dotenv').config()
 const {ApolloServer} = require('apollo-server-fastify')
 const {processRequest} = require('graphql-upload')
 
@@ -34,7 +35,7 @@ const start = async () => {
     await server.start()
 
     app.register(server.createHandler())
-    const PORT = 3000
+    const PORT = process.env.PORT
     const URL = await app.listen(PORT)
     console.log(`
       🚀  Server is running

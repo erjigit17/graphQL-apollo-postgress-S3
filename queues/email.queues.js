@@ -3,7 +3,10 @@ const Bull = require('bull')
 const emailProcess = require('../src/processes/email.process')
 
 const emailQueue = new Bull('email', {
-  redis: process.env.REDIS_URL
+  redis: {
+    url: process.env.REDIS_URL,
+    secure: process.env.REDIS_TLS_URL
+  }
 })
 
 emailQueue.process(emailProcess)

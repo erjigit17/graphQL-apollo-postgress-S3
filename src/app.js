@@ -35,13 +35,18 @@ const start = async () => {
     await server.start()
 
     app.register(server.createHandler())
-    const PORT = process.env.PORT
-    const URL = await app.listen(PORT)
-    console.log(`
-      🚀  Server is running
-      🔉  Listening on port ${PORT}
-      📭  Query at ${URL}/graphql
-    `)
+    const PORT = process.env.PORT || 3000
+    app.listen(PORT, '0.0.0.0', (err) => {
+      if (err) {
+        app.log.error(err)
+        process.exit(1)
+      }
+    })
+    // console.log(`
+    //   🚀  Server is running
+    //   🔉  Listening on port ${PORT}
+    //   📭  Query at ${URL}/graphql
+    // `)
   } catch (err) {
     app.log.error(err)
     process.exit(1)

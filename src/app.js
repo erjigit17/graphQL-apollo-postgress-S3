@@ -42,11 +42,6 @@ const start = async () => {
         process.exit(1)
       }
     })
-    // console.log(`
-    //   🚀  Server is running
-    //   🔉  Listening on port ${PORT}
-    //   📭  Query at ${URL}/graphql
-    // `)
   } catch (err) {
     app.log.error(err)
     process.exit(1)
